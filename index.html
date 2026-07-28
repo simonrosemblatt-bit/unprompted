@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Unprompted · Ritual semanal</title>
+<meta name="theme-color" content="#0F0D0B">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Unprompted">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F0D0B;
+    --surface:#171410;
+    --ivory:#EFE7D6;
+    --muted:#9A917F;
+    --faint:#6B6357;
+    --hair:#2A2620;
+    --amber:#E0A24A;
+    --amber-deep:#C97F2E;
+    --clay:#C25A3E;
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --mono:"Space Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ivory);
+    font-family:var(--serif);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    padding:clamp(20px,4vw,56px) clamp(18px,4vw,40px);
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* ambient warm glow behind the concept */
+  body::before{
+    content:"";
+    position:fixed;
+    top:38%;left:50%;
+    width:min(720px,90vw);height:min(720px,90vw);
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(224,162,74,.10), rgba(224,162,74,0) 62%);
+    pointer-events:none;
+    z-index:0;
+  }
+  .stage{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:720px;
+    display:flex;
+    flex-direction:column;
+    gap:clamp(26px,4vw,42px);
+  }
+
+  /* ---- masthead ---- */
+  .masthead{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.34em;
+    text-transform:uppercase;
+    color:var(--amber);
+  }
+  .wordmark{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(1.5rem,4vw,2rem);
+    letter-spacing:.01em;
+    font-variation-settings:"SOFT" 20,"WONK" 1,"opsz" 40;
+  }
+  .tagline{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--muted);
+    letter-spacing:.02em;
+    max-width:34ch;
+    line-height:1.5;
+  }
+
+  /* ---- concept card ---- */
+  .card{
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    padding:clamp(20px,3vw,32px) 4px;
+    min-height:230px;
+    justify-content:center;
+  }
+  .field{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    color:var(--faint);
+    min-height:14px;
+    transition:color .4s ease;
+  }
+  .card.revealed .field{color:var(--amber-deep)}
+  .concept-wrap{position:relative;display:inline-block;max-width:100%}
+  .concept{
+    margin:0;
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(2.2rem,7.5vw,4.6rem);
+    line-height:1.02;
+    letter-spacing:-.012em;
+    font-variation-settings:"SOFT" 34,"WONK" 1,"opsz" 144;
+    color:var(--ivory);
+    transition:opacity .35s ease, filter .35s ease;
+  }
+  .card.idle .concept{color:var(--faint);font-weight:400;font-size:clamp(1.6rem,5vw,2.6rem)}
+  .card.shuffling .concept{opacity:.5;filter:blur(1.2px)}
+  /* hand-drawn ink underline */
+  .underline{
+    display:block;
+    width:min(100%,34ch);
+    height:18px;
+    margin:2px auto 0;
+    opacity:0;
+  }
+  .card.revealed .underline{opacity:1}
+  .underline path{
+    fill:none;
+    stroke:var(--amber);
+    stroke-width:2.4;
+    stroke-linecap:round;
+    vector-effect:non-scaling-stroke;
+    stroke-dasharray:1;
+    stroke-dashoffset:1;
+  }
+  .underline.draw path{animation:ink .9s cubic-bezier(.65,0,.35,1) forwards}
+  @keyframes ink{to{stroke-dashoffset:0}}
+  .alt{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--muted);
+    min-height:16px;
+    letter-spacing:.01em;
+  }
+  .alt a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--hair)}
+  .alt a:hover{color:var(--amber);border-color:var(--amber-deep)}
+
+  /* ---- primary controls ---- */
+  .controls{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .draw{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--bg);
+    background:var(--amber);
+    border:none;
+    padding:15px 30px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:transform .12s ease, background .2s ease, box-shadow .2s ease;
+    box-shadow:0 0 0 rgba(224,162,74,0);
+  }
+  .draw:hover{background:#EBB061;box-shadow:0 8px 30px rgba(224,162,74,.22)}
+  .draw:active{transform:translateY(1px)}
+  .select-wrap{position:relative}
+  select{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--ivory);
+    background:var(--surface);
+    border:1px solid var(--hair);
+    padding:14px 34px 14px 14px;
+    border-radius:2px;
+    cursor:pointer;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  .select-wrap::after{
+    content:"▾";
+    position:absolute;right:13px;top:50%;transform:translateY(-50%);
+    color:var(--faint);pointer-events:none;font-size:11px;
+  }
+
+  /* ---- timer ---- */
+  .timer{
+    border:1px solid var(--hair);
+    border-radius:3px;
+    background:linear-gradient(180deg,rgba(23,20,16,.7),rgba(15,13,11,.4));
+    padding:22px clamp(16px,3vw,28px) 24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+  .seg{display:inline-flex;border:1px solid var(--hair);border-radius:2px;overflow:hidden}
+  .seg button{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    background:transparent;
+    border:none;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:color .2s,background .2s;
+  }
+  .seg button + button{border-left:1px solid var(--hair)}
+  .seg button.active{color:var(--bg);background:var(--muted)}
+  .clock{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(3rem,13vw,5rem);
+    letter-spacing:.02em;
+    line-height:1;
+    color:var(--ivory);
+    font-variant-numeric:tabular-nums;
+    transition:color .3s ease;
+  }
+  .clock.low{color:var(--amber)}
+  .clock.done{color:var(--clay);animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  .timer-btns{display:flex;gap:10px}
+  .tbtn{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ivory);
+    background:transparent;
+    border:1px solid var(--hair);
+    padding:11px 20px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:border-color .2s,color .2s;
+  }
+  .tbtn:hover{border-color:var(--amber-deep);color:var(--amber)}
+  .tbtn.primary{border-color:var(--amber);color:var(--amber)}
+  .sound{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+    color:var(--faint);background:none;border:none;cursor:pointer;
+    text-transform:uppercase;
+  }
+  .sound:hover{color:var(--muted)}
+
+  /* ---- rules footer ---- */
+  .rules{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px 12px;
+    padding-top:2px;
+  }
+  .chip{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    border:1px solid var(--hair);
+    border-radius:100px;
+    padding:7px 14px;
+    display:inline-flex;
+    gap:7px;
+    align-items:center;
+  }
+  .chip b{color:var(--amber-deep);font-weight:700}
+  .meta{
+    width:100%;
+    text-align:center;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    color:var(--faint);
+    margin-top:6px;
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    align-items:center;
+  }
+  .meta button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    color:var(--faint);background:none;border:none;cursor:pointer;
+    border-bottom:1px solid var(--hair);padding:0 0 1px;
+  }
+  .meta button:hover{color:var(--amber)}
+
+  a:focus-visible,button:focus-visible,select:focus-visible{
+    outline:2px solid var(--amber);outline-offset:3px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .underline.draw path{animation:none;stroke-dashoffset:0}
+    .clock.done{animation:none}
+    .concept{transition:none}
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <header class="masthead">
+      <div class="eyebrow">Ritual semanal</div>
+      <div class="wordmark">Unprompted</div>
+      <p class="tagline">Saca un tema al azar. Investígalo 15 minutos. Preséntalo en uno.</p>
+    </header>
+
+    <section class="card idle" id="card">
+      <div class="field" id="field">Disciplina</div>
+      <div class="concept-wrap">
+        <h1 class="concept" id="concept" aria-live="polite">Pulsa para empezar</h1>
+        <svg class="underline" id="underline" viewBox="0 0 300 18" preserveAspectRatio="none" aria-hidden="true">
+          <path pathLength="1" d="M4 12 C 46 5, 92 6, 138 10 S 224 16, 296 7"></path>
+        </svg>
+      </div>
+      <div class="alt" id="alt"></div>
+    </section>
+
+    <div class="controls">
+      <div class="select-wrap">
+        <select id="filter" aria-label="Filtrar por disciplina">
+          <option value="all">Todas las disciplinas</option>
+        </select>
+      </div>
+      <button class="draw" id="draw">Sacar un tema</button>
+    </div>
+
+    <section class="timer" aria-label="Cronómetro">
+      <div class="seg" role="tablist">
+        <button id="mResearch" class="active" role="tab">Investigar · 15:00</button>
+        <button id="mPresent" role="tab">Presentar · 1:00</button>
+      </div>
+      <div class="clock" id="clock">15:00</div>
+      <div class="timer-btns">
+        <button class="tbtn primary" id="startBtn">Iniciar</button>
+        <button class="tbtn" id="resetBtn">Reiniciar</button>
+      </div>
+      <button class="sound" id="soundBtn">🔔 Sonido: activado</button>
+    </section>
+
+    <footer class="rules">
+      <span class="chip"><b>×</b> Sin IA</span>
+      <span class="chip"><b>◆</b> Solo Google Scholar</span>
+      <span class="chip"><b>✎</b> Notas a mano</span>
+      <div class="meta">
+        <span id="seenCount">0 / 0 vistos</span>
+        <button id="resetSeen">Reiniciar historial</button>
+      </div>
+    </footer>
+  </main>
+
+<script>
+/* ----------------------------- data ----------------------------- */
+const TOPICS = [
+  // Psicología
+  ["El error fundamental de atribución","The fundamental attribution error","Psicología"],
+  ["La disonancia cognitiva","Cognitive dissonance","Psicología"],
+  ["El efecto Dunning-Kruger","The Dunning-Kruger effect","Psicología"],
+  ["El sesgo de confirmación","Confirmation bias","Psicología"],
+  ["El efecto espectador","The bystander effect","Psicología"],
+  ["La aversión a la pérdida","Loss aversion","Psicología"],
+  ["El efecto halo","The halo effect","Psicología"],
+  ["La indefensión aprendida","Learned helplessness","Psicología"],
+  ["El estado de flujo","Flow state","Psicología"],
+  ["El sesgo de anclaje","Anchoring bias","Psicología"],
+  ["La jerarquía de necesidades de Maslow","Maslow's hierarchy of needs","Psicología"],
+  ["La profecía autocumplida","The self-fulfilling prophecy","Psicología"],
+  ["La adaptación hedónica","The hedonic treadmill","Psicología"],
+  ["El efecto de mera exposición","The mere-exposure effect","Psicología"],
+  // Economía
+  ["La tragedia de los comunes","The tragedy of the commons","Economía"],
+  ["La ventaja comparativa","Comparative advantage","Economía"],
+  ["El dilema del prisionero","The prisoner's dilemma","Economía"],
+  ["El equilibrio de Nash","Nash equilibrium","Economía"],
+  ["El costo de oportunidad","Opportunity cost","Economía"],
+  ["La mano invisible","The invisible hand","Economía"],
+  ["El riesgo moral","Moral hazard","Economía"],
+  ["La destrucción creativa","Creative destruction","Economía"],
+  ["El efecto Lindy","The Lindy effect","Economía"],
+  ["Los bienes de Veblen","Veblen goods","Economía"],
+  ["Las externalidades","Externalities","Economía"],
+  ["La falacia del costo hundido","The sunk-cost fallacy","Economía"],
+  ["Los efectos de red","Network effects","Economía"],
+  ["La ley de Goodhart","Goodhart's law","Economía"],
+  // Filosofía
+  ["El problema del tranvía","The trolley problem","Filosofía"],
+  ["El barco de Teseo","The ship of Theseus","Filosofía"],
+  ["El velo de la ignorancia","The veil of ignorance","Filosofía"],
+  ["El imperativo categórico","The categorical imperative","Filosofía"],
+  ["La navaja de Occam","Occam's razor","Filosofía"],
+  ["La máquina de experiencias","The experience machine","Filosofía"],
+  ["La apuesta de Pascal","Pascal's wager","Filosofía"],
+  ["El problema del ser y el deber ser","The is-ought problem","Filosofía"],
+  ["La habitación china","The Chinese room argument","Filosofía"],
+  ["La caverna de Platón","Plato's allegory of the cave","Filosofía"],
+  ["El problema difícil de la conciencia","The hard problem of consciousness","Filosofía"],
+  ["La paradoja de la tolerancia","The paradox of tolerance","Filosofía"],
+  ["El azar moral","Moral luck","Filosofía"],
+  ["El absurdo","Absurdism","Filosofía"],
+  // Física
+  ["La entropía","Entropy","Física"],
+  ["El entrelazamiento cuántico","Quantum entanglement","Física"],
+  ["El efecto del observador","The observer effect","Física"],
+  ["El gato de Schrödinger","Schrödinger's cat","Física"],
+  ["El principio de incertidumbre","The uncertainty principle","Física"],
+  ["La emergencia","Emergence","Física"],
+  ["La teoría del caos","Chaos theory butterfly effect","Física"],
+  ["La paradoja de Fermi","The Fermi paradox","Física"],
+  ["La dualidad onda-partícula","Wave-particle duality","Física"],
+  ["El experimento de la doble rendija","The double-slit experiment","Física"],
+  ["La flecha del tiempo","The arrow of time","Física"],
+  ["La relatividad especial","Special relativity","Física"],
+  ["El efecto túnel cuántico","Quantum tunneling","Física"],
+  ["La superconductividad","Superconductivity","Física"],
+  // Biología
+  ["La selección natural","Natural selection","Biología"],
+  ["La hipótesis de la Reina Roja","The Red Queen hypothesis","Biología"],
+  ["La epigenética","Epigenetics","Biología"],
+  ["La evolución convergente","Convergent evolution","Biología"],
+  ["La homeostasis","Homeostasis","Biología"],
+  ["La selección de parentesco","Kin selection","Biología"],
+  ["La neuroplasticidad","Neuroplasticity","Biología"],
+  ["El eje intestino-cerebro","The gut-brain axis","Biología"],
+  ["El equilibrio puntuado","Punctuated equilibrium","Biología"],
+  ["La simbiosis","Symbiosis mutualism","Biología"],
+  ["La apoptosis","Apoptosis programmed cell death","Biología"],
+  ["La detección de quórum bacteriana","Bacterial quorum sensing","Biología"],
+  ["Los telómeros y el envejecimiento","Telomeres and cellular aging","Biología"],
+  ["El mimetismo batesiano","Batesian mimicry","Biología"],
+  // Matemáticas
+  ["Los teoremas de incompletitud de Gödel","Gödel's incompleteness theorems","Matemáticas"],
+  ["El problema de Monty Hall","The Monty Hall problem","Matemáticas"],
+  ["El teorema de Bayes","Bayes' theorem","Matemáticas"],
+  ["La paradoja del cumpleaños","The birthday paradox","Matemáticas"],
+  ["Los fractales","Fractals","Matemáticas"],
+  ["La proporción áurea","The golden ratio","Matemáticas"],
+  ["La paradoja de Simpson","Simpson's paradox","Matemáticas"],
+  ["La ley de los grandes números","The law of large numbers","Matemáticas"],
+  ["La ley de Benford","Benford's law","Matemáticas"],
+  ["El infinito de Cantor","Cantor's diagonal argument","Matemáticas"],
+  ["La sucesión de Fibonacci","The Fibonacci sequence","Matemáticas"],
+  ["El teorema de los cuatro colores","The four color theorem","Matemáticas"],
+  ["Los puentes de Königsberg","The Seven Bridges of Königsberg","Matemáticas"],
+  ["La banda de Möbius","The Möbius strip","Matemáticas"],
+  // Sociología
+  ["La ventana de Overton","The Overton window","Sociología"],
+  ["El capital social","Social capital","Sociología"],
+  ["El efecto Mateo","The Matthew effect","Sociología"],
+  ["El pensamiento de grupo","Groupthink","Sociología"],
+  ["La teoría de las ventanas rotas","Broken windows theory","Sociología"],
+  ["El número de Dunbar","Dunbar's number","Sociología"],
+  ["Los seis grados de separación","Six degrees of separation","Sociología"],
+  ["La dependencia de la trayectoria","Path dependence","Sociología"],
+  ["El problema de la acción colectiva","The collective-action problem","Sociología"],
+  ["La anomia","Anomie Durkheim","Sociología"],
+  ["La difusión de innovaciones","Diffusion of innovations","Sociología"],
+  ["La conformidad de Asch","The Asch conformity experiments","Sociología"],
+  ["El capital cultural","Cultural capital Bourdieu","Sociología"],
+  ["La espiral del silencio","The spiral of silence","Sociología"],
+  // Lingüística
+  ["La hipótesis de Sapir-Whorf","The Sapir-Whorf hypothesis","Lingüística"],
+  ["La gramática universal","Universal grammar","Lingüística"],
+  ["La saciedad semántica","Semantic satiation","Lingüística"],
+  ["El cambio de código","Code-switching","Lingüística"],
+  ["El período crítico de adquisición","The critical period hypothesis","Lingüística"],
+  ["La ley de Zipf","Zipf's law","Lingüística"],
+  ["El efecto bouba-kiki","The bouba-kiki effect","Lingüística"],
+  ["La arbitrariedad del signo","The arbitrariness of the sign","Lingüística"],
+  ["Los criollos y pidgins","Creole and pidgin languages","Lingüística"],
+  ["La teoría de prototipos","Prototype theory linguistics","Lingüística"],
+  ["La etimología popular","Folk etymology","Lingüística"],
+  ["El área de Broca y el lenguaje","Broca's area and language","Lingüística"],
+  ["La muerte de las lenguas","Language death","Lingüística"],
+  ["El priming sintáctico","Syntactic priming","Lingüística"],
+  // Ideas
+  ["El efecto Streisand","The Streisand effect","Ideas"],
+  ["El sesgo del superviviente","Survivorship bias","Ideas"],
+  ["La cerca de Chesterton","Chesterton's fence","Ideas"],
+  ["El principio de Peter","The Peter principle","Ideas"],
+  ["La ley de Parkinson","Parkinson's law","Ideas"],
+  ["El principio de Pareto","The Pareto principle 80/20","Ideas"],
+  ["La navaja de Hanlon","Hanlon's razor","Ideas"],
+  ["El efecto cobra","The cobra effect","Ideas"],
+  ["El valle inquietante","The uncanny valley","Ideas"],
+  ["El culto cargo","Cargo cult science","Ideas"],
+  ["El efecto Flynn","The Flynn effect","Ideas"],
+  ["Las consecuencias imprevistas","The law of unintended consequences","Ideas"],
+  ["La ley de Murphy","Murphy's law","Ideas"],
+  ["La navaja de Hitchens","Hitchens's razor","Ideas"],
+  // Finanzas
+  ["El interés compuesto","Compound interest","Finanzas"],
+  ["El valor temporal del dinero","The time value of money","Finanzas"],
+  ["La regla del 72","The rule of 72","Finanzas"],
+  ["El costo promedio (DCA)","Dollar-cost averaging","Finanzas"],
+  ["La diversificación de cartera","Portfolio diversification","Finanzas"],
+  ["El apalancamiento financiero","Financial leverage","Finanzas"],
+  ["La hipótesis del mercado eficiente","The efficient-market hypothesis","Finanzas"],
+  ["El flujo de caja descontado","Discounted cash flow","Finanzas"],
+  ["El ratio de Sharpe","The Sharpe ratio","Finanzas"],
+  ["La paridad del poder adquisitivo","Purchasing power parity","Finanzas"],
+  ["El arbitraje","Arbitrage","Finanzas"],
+  ["La curva de rendimiento invertida","The inverted yield curve","Finanzas"],
+  ["La prima de riesgo de mercado","The equity risk premium","Finanzas"],
+  ["La fiebre de los tulipanes","Tulip mania","Finanzas"],
+  // Mercados
+  ["El estrangulamiento de cortos","The short squeeze","Mercados"],
+  ["La venta en corto","Short selling","Mercados"],
+  ["El ratio precio-beneficio","The price-to-earnings ratio","Mercados"],
+  ["La capitalización de mercado","Market capitalization","Mercados"],
+  ["Los dividendos","Stock dividends","Mercados"],
+  ["La beta de una acción","Stock beta","Mercados"],
+  ["Los mercados alcistas y bajistas","Bull and bear markets","Mercados"],
+  ["La recompra de acciones","Stock buybacks","Mercados"],
+  ["El ratio CAPE de Shiller","The Shiller CAPE ratio","Mercados"],
+  ["La teoría del más tonto","The greater fool theory","Mercados"],
+  ["El índice del miedo (VIX)","The VIX volatility index","Mercados"],
+  ["El cisne negro","The black swan theory","Mercados"],
+  ["Análisis técnico frente al fundamental","Technical versus fundamental analysis","Mercados"],
+  ["El efecto enero","The January effect","Mercados"],
+  // Nutrición
+  ["La ventana anabólica","The anabolic window","Nutrición"],
+  ["La carga de carbohidratos","Carbohydrate loading","Nutrición"],
+  ["La síntesis de proteína muscular","Muscle protein synthesis","Nutrición"],
+  ["El índice glucémico","The glycemic index","Nutrición"],
+  ["La suplementación con creatina","Creatine supplementation","Nutrición"],
+  ["La cafeína como ayuda ergogénica","Caffeine as an ergogenic aid","Nutrición"],
+  ["El nitrato dietético y la remolacha","Dietary nitrate and beetroot juice","Nutrición"],
+  ["La periodización de nutrientes","Nutrient timing","Nutrición"],
+  ["El umbral de leucina","The leucine threshold","Nutrición"],
+  ["El efecto térmico de los alimentos","The thermic effect of food","Nutrición"],
+  ["El equilibrio de nitrógeno","Nitrogen balance","Nutrición"],
+  ["Los electrolitos y la hidratación","Electrolytes and hydration in exercise","Nutrición"],
+  ["La beta-alanina","Beta-alanine supplementation","Nutrición"],
+  ["La resíntesis de glucógeno","Glycogen resynthesis","Nutrición"],
+  // Rendimiento
+  ["El consumo máximo de oxígeno (VO2 máx)","VO2 max","Rendimiento"],
+  ["El umbral de lactato","The lactate threshold","Rendimiento"],
+  ["La supercompensación","Supercompensation training","Rendimiento"],
+  ["La periodización del entrenamiento","Training periodization","Rendimiento"],
+  ["El consumo de oxígeno post-ejercicio (EPOC)","Excess post-exercise oxygen consumption","Rendimiento"],
+  ["Fibras de contracción rápida y lenta","Fast-twitch and slow-twitch muscle fibers","Rendimiento"],
+  ["El principio de especificidad (SAID)","The SAID principle","Rendimiento"],
+  ["El síndrome de sobreentrenamiento","Overtraining syndrome","Rendimiento"],
+  ["La economía de carrera","Running economy","Rendimiento"],
+  ["El entrenamiento pliométrico","Plyometric training","Rendimiento"],
+  ["El entrenamiento en altitud","Altitude training","Rendimiento"],
+  ["La variabilidad de la frecuencia cardíaca","Heart rate variability training","Rendimiento"],
+  ["La potencia crítica","Critical power model","Rendimiento"],
+  ["El muro del maratón","Hitting the wall glycogen depletion","Rendimiento"],
+  // Fisiología
+  ["El ritmo circadiano","The circadian rhythm","Fisiología"],
+  ["El nervio vago","The vagus nerve","Fisiología"],
+  ["La respuesta de lucha o huida","The fight-or-flight response","Fisiología"],
+  ["El microbioma intestinal","The gut microbiome","Fisiología"],
+  ["La neurogénesis adulta","Adult neurogenesis","Fisiología"],
+  ["La propiocepción","Proprioception","Fisiología"],
+  ["El reflejo de inmersión de los mamíferos","The mammalian dive reflex","Fisiología"],
+  ["La grasa parda y la termogénesis","Brown fat thermogenesis","Fisiología"],
+  ["El efecto placebo","The placebo effect","Fisiología"],
+  ["El efecto nocebo","The nocebo effect","Fisiología"],
+  ["La plasticidad sináptica","Synaptic plasticity","Fisiología"],
+  ["La deuda de sueño","Sleep debt","Fisiología"],
+  ["El dolor referido","Referred pain","Fisiología"],
+  ["La memoria muscular","Muscle memory physiology","Fisiología"],
+  // Geografía
+  ["La línea de Wallace","The Wallace line","Geografía"],
+  ["El punto Nemo","Point Nemo oceanic pole of inaccessibility","Geografía"],
+  ["La zona de convergencia intertropical","The intertropical convergence zone","Geografía"],
+  ["La línea internacional de cambio de fecha","The international date line","Geografía"],
+  ["El gran intercambio americano","The Great American Interchange","Geografía"],
+  ["Los puntos calientes geológicos","Geological hotspots","Geografía"],
+  ["La distorsión de la proyección de Mercator","The Mercator projection distortion","Geografía"],
+  ["Las antípodas","Antipodes geography","Geografía"],
+  ["El Cinturón de Fuego del Pacífico","The Pacific Ring of Fire","Geografía"],
+  ["Los enclaves y exclaves","Enclaves and exclaves","Geografía"],
+  ["El Sahel","The Sahel region","Geografía"],
+  ["La sombra orográfica","The rain shadow effect","Geografía"],
+  ["La tectónica de placas","Plate tectonics","Geografía"],
+  ["Los ríos atmosféricos","Atmospheric rivers","Geografía"],
+  // Océano
+  ["La circulación termohalina","Thermohaline circulation","Océano"],
+  ["La zona de medianoche del océano","The ocean midnight zone","Océano"],
+  ["La bioluminiscencia marina","Marine bioluminescence","Océano"],
+  ["El blanqueamiento de corales","Coral bleaching","Océano"],
+  ["La corriente del Golfo","The Gulf Stream","Océano"],
+  ["El fitoplancton y el oxígeno","Phytoplankton oxygen production","Océano"],
+  ["Las fuentes hidrotermales","Hydrothermal vents","Océano"],
+  ["El fenómeno de El Niño","The El Niño Southern Oscillation","Océano"],
+  ["La migración vertical diaria","Diel vertical migration","Océano"],
+  ["El canal de sonido SOFAR","The SOFAR sound channel","Océano"],
+  ["La nieve marina","Marine snow","Océano"],
+  ["La acidificación del océano","Ocean acidification","Océano"],
+  ["Las zonas muertas oceánicas","Ocean dead zones hypoxia","Océano"],
+  ["La mancha de basura del Pacífico","The Great Pacific Garbage Patch","Océano"],
+  // Fenómenos
+  ["La aurora boreal","The aurora borealis","Fenómenos"],
+  ["El rayo globular","Ball lightning","Fenómenos"],
+  ["El fuego de San Telmo","St. Elmo's fire","Fenómenos"],
+  ["Las nubes noctilucentes","Noctilucent clouds","Fenómenos"],
+  ["El rayo verde","The green flash sunset","Fenómenos"],
+  ["Los círculos de hadas","Fairy circles","Fenómenos"],
+  ["La sincronización de las luciérnagas","Firefly synchronization","Fenómenos"],
+  ["El efecto Mpemba","The Mpemba effect","Fenómenos"],
+  ["El espejismo Fata Morgana","The Fata Morgana mirage","Fenómenos"],
+  ["Las piedras navegantes","The sailing stones of Death Valley","Fenómenos"],
+  ["El monzón","The monsoon","Fenómenos"],
+  ["Los remolinos de fuego","Fire whirls","Fenómenos"],
+  ["Las cataratas de sangre de la Antártida","Blood Falls Antarctica","Fenómenos"],
+  ["El mar de ardora","Sea sparkle Noctiluca","Fenómenos"],
+  // Astronomía
+  ["Los agujeros negros","Black holes","Astronomía"],
+  ["La radiación de Hawking","Hawking radiation","Astronomía"],
+  ["El horizonte de sucesos","The event horizon","Astronomía"],
+  ["Las supernovas","Supernovae","Astronomía"],
+  ["La energía oscura","Dark energy","Astronomía"],
+  ["El fondo cósmico de microondas","The cosmic microwave background","Astronomía"],
+  ["Los púlsares","Pulsars","Astronomía"],
+  ["La zona habitable","The circumstellar habitable zone","Astronomía"],
+  ["El acoplamiento de marea","Tidal locking","Astronomía"],
+  ["El Gran Filtro","The Great Filter","Astronomía"],
+  ["La escala de Kardashov","The Kardashev scale","Astronomía"],
+  ["La lente gravitacional","Gravitational lensing","Astronomía"],
+  ["El océano bajo el hielo de Europa","Europa subsurface ocean","Astronomía"],
+  ["Las ondas gravitacionales","Gravitational waves","Astronomía"],
+  // Historia
+  ["La Ruta de la Seda","The Silk Road","Historia"],
+  ["El intercambio colombino","The Columbian exchange","Historia"],
+  ["La Peste Negra","The Black Death","Historia"],
+  ["El colapso de la Edad de Bronce","The Late Bronze Age collapse","Historia"],
+  ["La Biblioteca de Alejandría","The Library of Alexandria","Historia"],
+  ["El año sin verano de 1816","The year without a summer 1816","Historia"],
+  ["La revolución neolítica","The Neolithic revolution","Historia"],
+  ["La imprenta de Gutenberg","The Gutenberg printing press","Historia"],
+  ["La caída del Imperio Romano de Occidente","Fall of the Western Roman Empire","Historia"],
+  ["El mecanismo de Anticitera","The Antikythera mechanism","Historia"],
+  ["La Ilustración","The Enlightenment","Historia"],
+  ["El feudalismo","Feudalism","Historia"],
+  ["La gran hambruna irlandesa","The Great Irish Famine","Historia"],
+  ["El Imperio Mongol y la Pax Mongólica","The Mongol Empire Pax Mongolica","Historia"],
+  // Arte
+  ["La perspectiva lineal","Linear perspective in art","Arte"],
+  ["El claroscuro","Chiaroscuro","Arte"],
+  ["El sfumato","Sfumato","Arte"],
+  ["La regla de los tercios","The rule of thirds","Arte"],
+  ["La perspectiva atmosférica","Atmospheric perspective","Arte"],
+  ["El trampantojo","Trompe-l'oeil","Arte"],
+  ["El ready-made de Duchamp","Duchamp's readymade","Arte"],
+  ["El horror vacui","Horror vacui","Arte"],
+  ["El wabi-sabi","Wabi-sabi aesthetics","Arte"],
+  ["El kintsugi","Kintsugi","Arte"],
+  ["El impresionismo","Impressionism","Arte"],
+  ["El color complementario","Complementary colors theory","Arte"],
+  ["El pentimento","Pentimento","Arte"],
+  ["La vanitas","Vanitas still life","Arte"],
+  // Música
+  ["La serie armónica","The harmonic series","Música"],
+  ["El temperamento igual","Equal temperament","Música"],
+  ["El efecto Mozart","The Mozart effect","Música"],
+  ["La consonancia y la disonancia","Consonance and dissonance","Música"],
+  ["El oído absoluto","Absolute pitch","Música"],
+  ["La escala pentatónica","The pentatonic scale","Música"],
+  ["El tritono","The tritone in music","Música"],
+  ["La síncopa","Syncopation","Música"],
+  ["El tono de Shepard","The Shepard tone","Música"],
+  ["La cadencia musical","Musical cadence","Música"],
+  ["El groove y el microtiempo","Groove and microtiming","Música"],
+  ["El contrapunto","Counterpoint","Música"],
+  ["El leitmotiv","The leitmotif","Música"],
+  ["La modulación","Musical modulation","Música"],
+  // Química
+  ["El enlace de hidrógeno","Hydrogen bonding","Química"],
+  ["La quiralidad molecular","Molecular chirality","Química"],
+  ["La catálisis","Catalysis chemistry","Química"],
+  ["La reacción de Maillard","The Maillard reaction","Química"],
+  ["La ósmosis","Osmosis","Química"],
+  ["Los cristales líquidos","Liquid crystals","Química"],
+  ["La tensión superficial","Surface tension","Química"],
+  ["Los fluidos supercríticos","Supercritical fluids","Química"],
+  ["Los gases nobles","Noble gases","Química"],
+  ["El pH y las soluciones amortiguadoras","pH and buffer solutions","Química"],
+  ["La radiactividad","Radioactivity","Química"],
+  ["La entalpía y la entropía","Enthalpy and entropy in reactions","Química"],
+  ["La fermentación","Fermentation chemistry","Química"],
+  ["La electronegatividad","Electronegativity","Química"],
+  // Tecnología
+  ["La ley de Moore","Moore's law","Tecnología"],
+  ["El problema de la parada","The halting problem","Tecnología"],
+  ["La criptografía de clave pública","Public-key cryptography","Tecnología"],
+  ["El teorema de muestreo de Nyquist","The Nyquist-Shannon sampling theorem","Tecnología"],
+  ["La entropía de la información","Shannon information entropy","Tecnología"],
+  ["El problema P frente a NP","The P versus NP problem","Tecnología"],
+  ["El cuello de botella de von Neumann","The von Neumann bottleneck","Tecnología"],
+  ["La compresión de datos","Data compression algorithms","Tecnología"],
+  ["El hash criptográfico","Cryptographic hashing","Tecnología"],
+  ["La cadena de bloques","Blockchain","Tecnología"],
+  ["La computación cuántica","Quantum computing","Tecnología"],
+  ["El aprendizaje por refuerzo","Reinforcement learning","Tecnología"],
+  ["La ley de Metcalfe","Metcalfe's law","Tecnología"],
+  ["El principio de Landauer","Landauer's principle","Tecnología"],
+  // Datos
+  ["La regresión a la media","Regression to the mean","Datos"],
+  ["Correlación no implica causalidad","Correlation does not imply causation","Datos"],
+  ["El valor p","The p-value","Datos"],
+  ["El intervalo de confianza","Confidence intervals","Datos"],
+  ["La distribución normal","The normal distribution","Datos"],
+  ["El teorema del límite central","The central limit theorem","Datos"],
+  ["El sesgo de selección","Selection bias","Datos"],
+  ["La falacia de la tasa base","The base rate fallacy","Datos"],
+  ["El p-hacking","P-hacking","Datos"],
+  ["La ley de los números pequeños","The law of small numbers","Datos"],
+  ["Significación estadística vs práctica","Statistical versus practical significance","Datos"],
+  ["El sobreajuste","Overfitting","Datos"],
+  ["El sesgo de publicación","Publication bias","Datos"],
+  ["El cuarteto de Anscombe","Anscombe's quartet","Datos"]
+].map((t,i)=>({id:i,es:t[0],en:t[1],field:t[2]}));
+
+/* ----------------------------- refs ----------------------------- */
+const $ = s => document.querySelector(s);
+const card=$("#card"), conceptEl=$("#concept"), fieldEl=$("#field"),
+      altEl=$("#alt"), underline=$("#underline"), drawBtn=$("#draw"),
+      filterEl=$("#filter"), clockEl=$("#clock"),
+      startBtn=$("#startBtn"), resetBtn=$("#resetBtn"),
+      mResearch=$("#mResearch"), mPresent=$("#mPresent"),
+      soundBtn=$("#soundBtn"), seenCountEl=$("#seenCount"), resetSeenBtn=$("#resetSeen");
+
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let seen = new Set();
+let lastId = null;
+let soundOn = true;
+
+/* build filter options */
+[...new Set(TOPICS.map(t=>t.field))].sort((a,b)=>a.localeCompare(b,"es")).forEach(f=>{
+  const o=document.createElement("option"); o.value=f; o.textContent=f; filterEl.appendChild(o);
+});
+
+/* ----------------------------- persistence ----------------------------- */
+const STORE_KEY="unprompted_seen_v2";
+async function loadSeen(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){ JSON.parse(raw).forEach(id=>seen.add(id)); }
+  }catch(e){/* first run or unavailable */}
+  updateSeen();
+}
+async function persistSeen(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify([...seen]));
+  }catch(e){/* ignore */}
+}
+function updateSeen(){ seenCountEl.textContent = `${seen.size} / ${TOPICS.length} vistos`; }
+
+/* ----------------------------- draw a topic ----------------------------- */
+function pool(){
+  const f=filterEl.value;
+  return f==="all" ? TOPICS : TOPICS.filter(t=>t.field===f);
+}
+function pick(){
+  const p=pool();
+  let cand=p.filter(t=>!seen.has(t.id));
+  if(cand.length===0){                    // cycle complete for this pool → start fresh
+    p.forEach(t=>seen.delete(t.id));
+    cand=p.slice();
+  }
+  if(cand.length>1 && lastId!==null) cand=cand.filter(t=>t.id!==lastId);
+  return cand[Math.floor(Math.random()*cand.length)];
+}
+
+let shuffleTimer=null;
+function reveal(topic){
+  card.classList.remove("idle");
+  card.classList.add("revealed");
+  conceptEl.textContent=topic.es;
+  fieldEl.textContent=topic.field;
+  altEl.innerHTML = `también: <a href="https://scholar.google.com/scholar?q=${encodeURIComponent(topic.en)}" target="_blank" rel="noopener">${topic.en} ↗</a>`;
+  // replay ink underline
+  underline.classList.remove("draw");
+  void underline.offsetWidth;
+  if(!reduce) underline.classList.add("draw");
+  lastId=topic.id;
+  seen.add(topic.id);
+  updateSeen(); persistSeen();
+  // reset timer to research after a fresh draw
+  setMode("research", true);
+}
+
+function draw(){
+  const topic=pick();
+  drawBtn.textContent="Sacar otro";
+  if(reduce){ reveal(topic); return; }
+  // shuffle flicker through candidate names, then settle
+  card.classList.remove("idle");
+  card.classList.add("shuffling");
+  const names=pool();
+  let ticks=0;
+  clearInterval(shuffleTimer);
+  shuffleTimer=setInterval(()=>{
+    conceptEl.textContent=names[Math.floor(Math.random()*names.length)].es;
+    if(++ticks>10){
+      clearInterval(shuffleTimer);
+      card.classList.remove("shuffling");
+      reveal(topic);
+    }
+  },48);
+}
+drawBtn.addEventListener("click", draw);
+filterEl.addEventListener("change", ()=>{ lastId=null; });
+
+/* keyboard: press "n" for a new topic */
+document.addEventListener("keydown", e=>{
+  if((e.key==="n"||e.key==="N") && document.activeElement.tagName!=="SELECT"){ draw(); }
+});
+
+/* ----------------------------- timer ----------------------------- */
+const DUR={research:900, present:60};
+let mode="research", remaining=DUR.research, running=false, tick=null;
+
+function fmt(s){ const m=Math.floor(s/60), ss=s%60; return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0"); }
+function renderClock(){
+  clockEl.textContent=fmt(remaining);
+  clockEl.classList.toggle("low", remaining<=30 && remaining>0 && !clockEl.classList.contains("done"));
+}
+function setMode(m, keepStopped){
+  mode=m;
+  mResearch.classList.toggle("active", m==="research");
+  mPresent.classList.toggle("active", m==="present");
+  stop();
+  clockEl.classList.remove("done","low");
+  remaining=DUR[m];
+  renderClock();
+}
+function stop(){ running=false; clearInterval(tick); startBtn.textContent="Iniciar"; startBtn.classList.add("primary"); }
+function start(){
+  if(running){ stop(); return; }
+  if(remaining<=0){ remaining=DUR[mode]; clockEl.classList.remove("done"); }
+  running=true; startBtn.textContent="Pausar"; startBtn.classList.remove("primary");
+  tick=setInterval(()=>{
+    remaining--;
+    renderClock();
+    if(remaining<=0){
+      clearInterval(tick); running=false;
+      startBtn.textContent="Iniciar"; startBtn.classList.add("primary");
+      clockEl.classList.remove("low"); clockEl.classList.add("done");
+      chime();
+    }
+  },1000);
+}
+startBtn.addEventListener("click", start);
+resetBtn.addEventListener("click", ()=>setMode(mode,true));
+mResearch.addEventListener("click", ()=>setMode("research"));
+mPresent.addEventListener("click", ()=>setMode("present"));
+
+/* ----------------------------- sound ----------------------------- */
+let audioCtx=null;
+function chime(){
+  if(!soundOn) return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    [880,660].forEach((f,i)=>{
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type="sine"; o.frequency.value=f;
+      o.connect(g); g.connect(audioCtx.destination);
+      const t=audioCtx.currentTime+i*0.28;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.18,t+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+      o.start(t); o.stop(t+0.55);
+    });
+  }catch(e){/* audio unavailable */}
+}
+soundBtn.addEventListener("click", ()=>{
+  soundOn=!soundOn;
+  soundBtn.textContent = soundOn ? "🔔 Sonido: activado" : "🔕 Sonido: apagado";
+});
+
+/* ----------------------------- reset history ----------------------------- */
+resetSeenBtn.addEventListener("click", ()=>{
+  seen.clear(); lastId=null; updateSeen(); persistSeen();
+});
+
+/* ----------------------------- init ----------------------------- */
+renderClock();
+loadSeen();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{});});
+}
+</script>
+</body>
+</html>
